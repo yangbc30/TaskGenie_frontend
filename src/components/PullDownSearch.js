@@ -16,6 +16,40 @@ const PullDownSearch = ({ visible, onClose, tasks, onTaskSelect, translateY, opa
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
 
+  // 本地计算任务标签
+  const calculateTaskTags = (task) => {
+    const tags = [];
+    const now = new Date();
+    const today = now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (task.completed) {
+      return ['已完成'];
+    }
+    
+    if (task.due_date) {
+      const dueDate = new Date(task.due_date);
+      const dueDateStr = dueDate.toDateString();
+      
+      if (dueDate < now) {
+        tags.push('已过期');
+      } else if (dueDateStr === today) {
+        tags.push('今日');
+      } else if (dueDateStr === tomorrow.toDateString()) {
+        tags.push('明日');
+      }
+    } else {
+      tags.push('今日');
+    }
+    
+    if (task.priority === 'high') {
+      tags.push('重要');
+    }
+    
+    return tags;
+  };
+
   useEffect(() => {
     if (!visible) {
       setSearchText('');
@@ -26,7 +60,14 @@ const PullDownSearch = ({ visible, onClose, tasks, onTaskSelect, translateY, opa
           task.name.toLowerCase().includes(searchText.toLowerCase()) ||
           (task.description && task.description.toLowerCase().includes(searchText.toLowerCase()))
         );
-        setFilteredTasks(filtered);
+        
+        // 为搜索结果添加计算的标签
+        const filteredWithTags = filtered.map(task => ({
+          ...task,
+          calculated_tags: calculateTaskTags(task)
+        }));
+        
+        setFilteredTasks(filteredWithTags);
       }
     }
   }, [visible, tasks, searchText]);
@@ -37,7 +78,14 @@ const PullDownSearch = ({ visible, onClose, tasks, onTaskSelect, translateY, opa
         task.name.toLowerCase().includes(searchText.toLowerCase()) ||
         (task.description && task.description.toLowerCase().includes(searchText.toLowerCase()))
       );
-      setFilteredTasks(filtered);
+      
+      // 为搜索结果添加计算的标签
+      const filteredWithTags = filtered.map(task => ({
+        ...task,
+        calculated_tags: calculateTaskTags(task)
+      }));
+      
+      setFilteredTasks(filteredWithTags);
     } else {
       setFilteredTasks([]);
     }
@@ -154,7 +202,10 @@ const PullDownSearch = ({ visible, onClose, tasks, onTaskSelect, translateY, opa
                   </View>
                   <View style={styles.statItem}>
                     <Text style={styles.statNumber}>
-                      {tasks.filter(t => t.task_tag === '已过期').length}
+                      {tasks.filter(t => {
+                        const tags = calculateTaskTags(t);
+                        return tags.includes('已过期');
+                      }).length}
                     </Text>
                     <Text style={styles.statLabel}>已逾期</Text>
                   </View>
@@ -169,7 +220,7 @@ const PullDownSearch = ({ visible, onClose, tasks, onTaskSelect, translateY, opa
                     找到 {filteredTasks.length} 个相关任务
                   </Text>
                   {filteredTasks.map((task) => {
-                    const isOverdue = task.task_tag === '已过期';
+                    const isOverdue = task.calculated_tags?.includes('已过期') || false;
                     return (
                       <TouchableOpacity
                         key={task.id}
@@ -192,9 +243,12 @@ const PullDownSearch = ({ visible, onClose, tasks, onTaskSelect, translateY, opa
                             ]}>
                               {task.name}
                             </Text>
-                            <View style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[task.task_tag] }]}>
-                              <Text style={styles.taskTagText}>{task.task_tag}</Text>
-                            </View>
+                            {/* 显示动态计算的标签 */}
+                            {task.calculated_tags?.map((tag, tagIndex) => (
+                              <View key={tagIndex} style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[tag] }]}>
+                                <Text style={styles.taskTagText}>{tag}</Text>
+                              </View>
+                            ))}
                           </View>
                           {task.description ? (
                             <Text style={styles.taskResultDescription} numberOfLines={2}>

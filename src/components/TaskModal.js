@@ -8,7 +8,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useTask, TASK_TAGS, TAG_COLORS } from '../context/TaskContext';
+import { useTask } from '../context/TaskContext';
 
 const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
   const {
@@ -28,13 +28,13 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
       return;
     }
 
+    // 简化的任务数据（移除tag相关字段）
     const taskData = {
       name: currentTask.name,
       description: currentTask.description,
       priority: currentTask.priority,
       due_date: currentTask.due_date || null,
       estimated_hours: currentTask.estimated_hours ? parseFloat(currentTask.estimated_hours) : null,
-      task_tag: currentTask.task_tag,
     };
 
     let success;
@@ -204,33 +204,6 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
     selectedPriorityText: {
       color: '#fff',
     },
-    tagSelector: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      marginTop: 5,
-      marginBottom: 15,
-    },
-    tagOption: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 15,
-      marginRight: 8,
-      marginBottom: 8,
-      opacity: 0.8,
-    },
-    selectedTag: {
-      opacity: 1,
-      borderWidth: 2,
-      borderColor: '#fff',
-    },
-    tagOptionText: {
-      color: '#fff',
-      fontSize: 12,
-      fontWeight: '600',
-    },
-    selectedTagText: {
-      fontWeight: 'bold',
-    },
     // 日期时间选择样式
     dateTimeContainer: {
       marginTop: 5,
@@ -382,28 +355,6 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
                     currentTask?.priority === priority && styles.selectedPriorityText,
                   ]}>
                     {priority === 'high' ? '高' : priority === 'medium' ? '中' : '低'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            
-            <Text style={styles.inputLabel}>任务标签</Text>
-            <View style={styles.tagSelector}>
-              {Object.keys(TASK_TAGS).filter(tag => tag !== '已完成' && tag !== '已过期').map((tag) => (
-                <TouchableOpacity
-                  key={tag}
-                  style={[
-                    styles.tagOption,
-                    { backgroundColor: TAG_COLORS[tag] },
-                    currentTask?.task_tag === tag && styles.selectedTag,
-                  ]}
-                  onPress={() => setCurrentTask({...currentTask, task_tag: tag})}
-                >
-                  <Text style={[
-                    styles.tagOptionText,
-                    currentTask?.task_tag === tag && styles.selectedTagText,
-                  ]}>
-                    {tag}
                   </Text>
                 </TouchableOpacity>
               ))}

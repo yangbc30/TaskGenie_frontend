@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-// 任务标签和颜色配置
+// 简化的任务标签和颜色配置
 export const TASK_TAGS = {
   '今日': '今日',
   '明日': '明日',
@@ -32,18 +32,19 @@ export const useTask = () => {
 };
 
 export const TaskProvider = ({ children }) => {
-  const [selectedTag, setSelectedTag] = useState('今日');
+  // 改为数组，支持多选标签
+  const [selectedTags, setSelectedTags] = useState(['今日']); // 默认选中今日
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  
+  // 简化的新任务状态
   const [newTask, setNewTask] = useState({
     name: '',
     description: '',
     priority: 'medium',
     due_date: '',
     estimated_hours: '',
-    task_tag: '今日',
-    original_tag: null, // 新增字段
   });
 
   const resetNewTask = () => {
@@ -53,14 +54,26 @@ export const TaskProvider = ({ children }) => {
       priority: 'medium',
       due_date: '',
       estimated_hours: '',
-      task_tag: '今日',
-      original_tag: null, // 重置时也清空原始标签
+    });
+  };
+
+  // 切换标签选择状态
+  const toggleTag = (tag) => {
+    setSelectedTags(prevTags => {
+      if (prevTags.includes(tag)) {
+        // 如果已选中，则取消选择
+        return prevTags.filter(t => t !== tag);
+      } else {
+        // 如果未选中，则添加选择
+        return [...prevTags, tag];
+      }
     });
   };
 
   const value = {
-    selectedTag,
-    setSelectedTag,
+    selectedTags,
+    setSelectedTags,
+    toggleTag,
     editModalVisible,
     setEditModalVisible,
     createModalVisible,

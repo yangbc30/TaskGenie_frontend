@@ -544,4 +544,104 @@ export const styles = StyleSheet.create({
     color: '#3498db',
     fontWeight: 'bold',
   },
+
+
+    tagFilterItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    // 确保有默认的边框样式
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+
+  // 选中状态样式 - 保持原有效果，不添加灰色边框
+  selectedTagFilter: {
+    opacity: 1,
+    transform: [{ scale: 1.05 }],
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    // 关键修复：不设置边框颜色，保持透明或移除边框相关属性
+    borderColor: 'transparent', // 或者完全不设置 borderColor
+  },
+
+  // 未选中状态样式
+  unselectedTagFilter: {
+    opacity: 0.5,
+    // 修复：只设置透明度，不设置边框颜色
+    // 移除了 borderWidth 和 borderColor 的设置
+  },
+
+  // 其他样式保持不变
+  tagFilterText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    marginRight: 6,
+  },
+
+  unselectedTagText: {
+    opacity: 0.7,
+  },
+
+  tagCountBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+    minWidth: 16,
+    alignItems: 'center',
+  },
+
+  unselectedTagCountBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+
+  tagCountText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+
+  unselectedTagCountText: {
+    opacity: 0.7,
+  },
+
+  selectedIndicator: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#fff',
+    color: '#27ae60',
+    fontSize: 10,
+    fontWeight: 'bold',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    textAlign: 'center',
+    lineHeight: 16,
+    // 确保对勾标识也不会带来边框问题
+    borderWidth: 0,
+  },
+
+  // 容器样式
+  tagFilterContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ecf0f1',
+  },
+
+  tagScrollContainer: {
+    paddingHorizontal: 15,
+  },
 });

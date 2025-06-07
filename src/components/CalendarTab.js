@@ -18,6 +18,40 @@ const CalendarTab = ({ pullUpPanResponder }) => {
   const [daySchedule, setDaySchedule] = useState(null); // 存储AI安排结果
   const [tasksChanged, setTasksChanged] = useState(false); // 任务是否发生变化
 
+  // 本地计算任务标签
+  const calculateTaskTags = (task) => {
+    const tags = [];
+    const now = new Date();
+    const today = now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (task.completed) {
+      return ['已完成'];
+    }
+    
+    if (task.due_date) {
+      const dueDate = new Date(task.due_date);
+      const dueDateStr = dueDate.toDateString();
+      
+      if (dueDate < now) {
+        tags.push('已过期');
+      } else if (dueDateStr === today) {
+        tags.push('今日');
+      } else if (dueDateStr === tomorrow.toDateString()) {
+        tags.push('明日');
+      }
+    } else {
+      tags.push('今日');
+    }
+    
+    if (task.priority === 'high') {
+      tags.push('重要');
+    }
+    
+    return tags;
+  };
+
   // 获取日历数据
   const fetchCalendarTasks = async () => {
     const year = currentMonth.getFullYear();
@@ -25,7 +59,23 @@ const CalendarTab = ({ pullUpPanResponder }) => {
     try {
       const response = await fetch(`${API_URL}/tasks/calendar/${year}/${month}`);
       const data = await response.json();
-      setCalendarTasks(data);
+      
+      // 为每个任务计算标签
+      const dataWithTags = {};
+      Object.keys(data).forEach(dateKey => {
+        dataWithTags[dateKey] = {
+          due: data[dateKey].due?.map(task => ({
+            ...task,
+            calculated_tags: calculateTaskTags(task)
+          })) || [],
+          scheduled: data[dateKey].scheduled?.map(task => ({
+            ...task,
+            calculated_tags: calculateTaskTags(task)
+          })) || []
+        };
+      });
+      
+      setCalendarTasks(dataWithTags);
     } catch (error) {
       console.error('获取日历数据失败', error);
     }
@@ -762,9 +812,12 @@ const CalendarTab = ({ pullUpPanResponder }) => {
                     <View style={styles.taskInfo}>
                       <View style={styles.taskInfoHeader}>
                         <Text style={styles.taskItemName}>{task.name}</Text>
-                        <View style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[task.task_tag] }]}>
-                          <Text style={styles.taskTagText}>{task.task_tag}</Text>
-                        </View>
+                        {/* 显示动态计算的标签 */}
+                        {task.calculated_tags?.map((tag, tagIndex) => (
+                          <View key={tagIndex} style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[tag] }]}>
+                            <Text style={styles.taskTagText}>{tag}</Text>
+                          </View>
+                        ))}
                       </View>
                       {task.description && (
                         <Text style={styles.taskItemDescription} numberOfLines={2}>
@@ -791,9 +844,12 @@ const CalendarTab = ({ pullUpPanResponder }) => {
                     <View style={styles.taskInfo}>
                       <View style={styles.taskInfoHeader}>
                         <Text style={styles.taskItemName}>{task.name}</Text>
-                        <View style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[task.task_tag] }]}>
-                          <Text style={styles.taskTagText}>{task.task_tag}</Text>
-                        </View>
+                        {/* 显示动态计算的标签 */}
+                        {task.calculated_tags?.map((tag, tagIndex) => (
+                          <View key={tagIndex} style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[tag] }]}>
+                            <Text style={styles.taskTagText}>{tag}</Text>
+                          </View>
+                        ))}
                       </View>
                       {task.description && (
                         <Text style={styles.taskItemDescription} numberOfLines={2}>

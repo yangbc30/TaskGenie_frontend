@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+// 清理后的 SwipeableTaskItem.js
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +12,46 @@ import { styles } from '../styles/ComponentStyles';
 
 const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime }) => {
   const translateX = useRef(new Animated.Value(0)).current;
+  const [taskTags, setTaskTags] = useState([]);
+
+  // 本地计算任务标签（与后端逻辑保持一致）
+  const calculateTaskTags = (task) => {
+    const tags = [];
+    const now = new Date();
+    const today = now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (task.completed) {
+      return ['已完成'];
+    }
+    
+    if (task.due_date) {
+      const dueDate = new Date(task.due_date);
+      const dueDateStr = dueDate.toDateString();
+      
+      if (dueDate < now) {
+        tags.push('已过期');
+      } else if (dueDateStr === today) {
+        tags.push('今日');
+      } else if (dueDateStr === tomorrow.toDateString()) {
+        tags.push('明日');
+      }
+    } else {
+      tags.push('今日');
+    }
+    
+    if (task.priority === 'high') {
+      tags.push('重要');
+    }
+    
+    return tags;
+  };
+
+  useEffect(() => {
+    const tags = calculateTaskTags(task);
+    setTaskTags(tags);
+  }, [task.completed, task.due_date, task.priority]);
   
   const panResponder = useRef(
     PanResponder.create({
@@ -18,20 +59,17 @@ const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime })
         return Math.abs(gestureState.dx) > 5;
       },
       onPanResponderMove: (_, gestureState) => {
-        // 只允许左滑
         if (gestureState.dx < 0) {
           translateX.setValue(gestureState.dx);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx < -50) {
-          // 左滑超过50像素，显示操作按钮
           Animated.spring(translateX, {
-            toValue: -150, // 显示两个按钮的宽度
+            toValue: -150,
             useNativeDriver: true,
           }).start();
         } else {
-          // 回到原位
           Animated.spring(translateX, {
             toValue: 0,
             useNativeDriver: true,
@@ -47,11 +85,10 @@ const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime })
     low: '#2ed573',
   };
 
-  const isOverdue = task.task_tag === '已过期';
+  const isOverdue = taskTags.includes('已过期');
 
   const handleEdit = () => {
     onEdit(task);
-    // 操作后收回按钮
     Animated.spring(translateX, {
       toValue: 0,
       useNativeDriver: true,
@@ -60,7 +97,6 @@ const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime })
 
   const handleDelete = () => {
     onDelete(task.id);
-    // 操作后收回按钮
     Animated.spring(translateX, {
       toValue: 0,
       useNativeDriver: true,
@@ -71,7 +107,6 @@ const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime })
     <View style={styles.swipeContainer}>
       {/* 右侧操作按钮区域 */}
       <View style={styles.actionButtonsContainer}>
-        {/* 修改按钮 */}
         <TouchableOpacity
           style={[styles.actionButton, styles.editButton]}
           onPress={handleEdit}
@@ -80,7 +115,6 @@ const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime })
           <Text style={styles.actionButtonText}>修改</Text>
         </TouchableOpacity>
         
-        {/* 删除按钮 */}
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
           onPress={handleDelete}
@@ -115,9 +149,12 @@ const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime })
               <Text style={[styles.taskName, task.completed && styles.taskCompleted, isOverdue && styles.taskOverdue]}>
                 {task.name}
               </Text>
-              <View style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[task.task_tag] }]}>
-                <Text style={styles.taskTagText}>{task.task_tag}</Text>
-              </View>
+              {/* 显示动态计算的标签 */}
+              {taskTags.map((tag, index) => (
+                <View key={index} style={[styles.taskTagBadge, { backgroundColor: TAG_COLORS[tag] }]}>
+                  <Text style={styles.taskTagText}>{tag}</Text>
+                </View>
+              ))}
             </View>
             {task.description ? (
               <Text style={styles.taskDescription} numberOfLines={1}>{task.description}</Text>

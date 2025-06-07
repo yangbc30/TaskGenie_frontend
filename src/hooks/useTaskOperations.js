@@ -42,17 +42,14 @@ export const useTaskOperations = () => {
     }
   };
 
-  // 更新任务 - 优化完成状态切换逻辑
+  // 更新任务
   const updateTask = async (taskId, updateData) => {
     try {
-      // 如果是切换完成状态，确保只发送必要的字段
       let payload = updateData;
       
-      // 如果是切换完成状态，专门处理
       if (updateData.hasOwnProperty('completed')) {
         payload = {
           completed: updateData.completed,
-          // 不发送 task_tag，让后端自动处理标签逻辑
         };
       }
 
@@ -65,7 +62,7 @@ export const useTaskOperations = () => {
       });
 
       if (response.ok) {
-        await fetchTasks(); // 重新获取任务列表以确保状态同步
+        await fetchTasks();
         return true;
       }
       return false;
@@ -76,10 +73,9 @@ export const useTaskOperations = () => {
     }
   };
 
-  // 切换任务完成状态 - 专门的方法
+  // 切换任务完成状态
   const toggleTaskCompletion = async (taskId, currentCompleted) => {
     try {
-      // 发送切换完成状态的请求
       const response = await fetch(`${API_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
@@ -91,13 +87,12 @@ export const useTaskOperations = () => {
       });
 
       if (response.ok) {
-        // 立即更新本地状态，提供更好的用户体验
+        // 立即更新本地状态
         setTasks(prevTasks => prevTasks.map(task => {
           if (task.id === taskId) {
             return {
               ...task,
               completed: !currentCompleted,
-              // 注意：不在这里更新task_tag，让后端处理后再同步
             };
           }
           return task;
@@ -111,7 +106,6 @@ export const useTaskOperations = () => {
     } catch (error) {
       Alert.alert('错误', '切换任务状态失败');
       console.error(error);
-      // 如果失败，重新获取任务以恢复正确状态
       await fetchTasks();
       return false;
     }
@@ -146,10 +140,9 @@ export const useTaskOperations = () => {
     );
   };
 
-  // AI 规划任务 - 添加maxTasks参数
-  const aiPlanTasks = async (prompt, maxTasks = 5) => {
+  // AI 规划任务
+  const aiPlanTasks = async (prompt) => {
     setLoading(true);
-    
     try {
       const response = await fetch(`${API_URL}/ai/plan-tasks/async`, {
         method: 'POST',
@@ -158,20 +151,14 @@ export const useTaskOperations = () => {
         },
         body: JSON.stringify({
           prompt: prompt,
-          max_tasks: maxTasks,
+          max_tasks: 3,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setAiJobId(data.job_id);
-        
-        // 只在开始时显示一次提示，不再显示完成弹窗
-        Alert.alert(
-          '开始规划', 
-          `AI 正在为您规划 ${maxTasks} 个任务，完成后任务会自动出现在列表中`,
-          [{ text: '好的', style: 'default' }]
-        );
+        Alert.alert('处理中', 'AI 正在为您规划任务，请稍候...');
       } else {
         const error = await response.json();
         Alert.alert('错误', error.detail || 'AI 处理失败');
@@ -184,60 +171,29 @@ export const useTaskOperations = () => {
     }
   };
 
-  // 检查 AI 任务状态
+  // 检查 AI 任务状态 - 移除完成提示
   useEffect(() => {
-    let checkJobStatus;
-    
     if (aiJobId) {
-      console.log(`开始检查AI作业状态: ${aiJobId}`);
-      
-      checkJobStatus = setInterval(async () => {
+      const checkJobStatus = setInterval(async () => {
         try {
           const response = await fetch(`${API_URL}/ai/jobs/${aiJobId}`);
           const job = await response.json();
           
-          console.log(`AI作业状态: ${job.status}`);
-          
           if (job.status === 'completed') {
-            // 清理状态
-            clearInterval(checkJobStatus);
             setAiJobId(null);
-            
-            console.log('AI规划完成，刷新任务列表');
-            
-            // 静默刷新任务列表，用户会看到新任务出现
-            await fetchTasks();
-            
-            // 不再显示弹窗，用户可以直接在任务列表中看到新生成的任务
-            console.log(`✅ AI规划完成：生成了 ${job.result ? job.result.length : 0} 个任务`);
-            
+            await fetchTasks(); // 静默刷新任务列表
+            // 移除了 Alert.alert('成功', 'AI 已为您规划任务');
           } else if (job.status === 'failed') {
-            // 清理状态
-            clearInterval(checkJobStatus);
             setAiJobId(null);
-            
-            // 失败时仍显示错误信息，因为用户需要知道失败原因
-            Alert.alert(
-              '规划失败', 
-              job.error || 'AI 处理失败，请稍后重试'
-            );
+            Alert.alert('错误', job.error || 'AI 处理失败');
           }
         } catch (error) {
           console.error('检查任务状态失败', error);
-          // 网络错误时清理状态
-          clearInterval(checkJobStatus);
-          setAiJobId(null);
         }
       }, 2000);
-    }
 
-    // 清理函数
-    return () => {
-      if (checkJobStatus) {
-        console.log('清理AI状态检查定时器');
-        clearInterval(checkJobStatus);
-      }
-    };
+      return () => clearInterval(checkJobStatus);
+    }
   }, [aiJobId]);
 
   return {
@@ -249,6 +205,6 @@ export const useTaskOperations = () => {
     updateTask,
     toggleTaskCompletion,
     deleteTask,
-    aiPlanTasks, // 现在接受prompt和maxTasks两个参数
+    aiPlanTasks,
   };
 };

@@ -11,7 +11,7 @@ import {
 import SwipeableTaskItem from './SwipeableTaskItem';
 import TaskModal from './TaskModal';
 import TagFilter from './TagFilter';
-import { useTask, TASK_TAGS } from '../context/TaskContext';
+import { useTask } from '../context/TaskContext';
 import { formatDateTime } from '../utils/dateUtils';
 import { styles } from '../styles/ComponentStyles';
 
@@ -24,8 +24,8 @@ const TaskListTab = ({
   pullUpPanResponder 
 }) => {
   const {
-    selectedTag,
-    setSelectedTag,
+    selectedTags,
+    toggleTag,
     editModalVisible,
     setEditModalVisible,
     createModalVisible,
@@ -38,30 +38,70 @@ const TaskListTab = ({
   const [newTaskName, setNewTaskName] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
-  // 根据标签过滤任务
-  const filterTasksByTag = (tag) => {
-    if (tag === '全部') {
-      setFilteredTasks(tasks);
-    } else {
-      setFilteredTasks(tasks.filter(task => task.task_tag === tag));
+  // 本地计算任务标签的函数（与后端逻辑保持一致）
+  const calculateTaskTags = (task) => {
+    const tags = [];
+    const now = new Date();
+    const today = now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (task.completed) {
+      return ['已完成'];
     }
+    
+    if (task.due_date) {
+      const dueDate = new Date(task.due_date);
+      const dueDateStr = dueDate.toDateString();
+      
+      if (dueDate < now) {
+        tags.push('已过期');
+      } else if (dueDateStr === today) {
+        tags.push('今日');
+      } else if (dueDateStr === tomorrow.toDateString()) {
+        tags.push('明日');
+      }
+    } else {
+      tags.push('今日');
+    }
+    
+    if (task.priority === 'high') {
+      tags.push('重要');
+    }
+    
+    return tags;
   };
 
-  // 处理标签选择
-  const handleTagSelect = (tag) => {
-    setSelectedTag(tag);
-    filterTasksByTag(tag);
+  // 根据选中的标签过滤任务（AND逻辑）
+  const filterTasksByTags = (tags) => {
+    if (tags.length === 0) {
+      // 如果没有选中任何标签，显示所有任务
+      setFilteredTasks(tasks);
+      return;
+    }
+
+    const filtered = tasks.filter(task => {
+      const taskTags = calculateTaskTags(task);
+      // AND逻辑：任务必须包含所有选中的标签
+      return tags.every(selectedTag => taskTags.includes(selectedTag));
+    });
+    
+    setFilteredTasks(filtered);
   };
 
-  // 监听tasks变化，自动过滤
+  // 处理标签切换
+  const handleTagToggle = (tag) => {
+    toggleTag(tag);
+  };
+
+  // 监听selectedTags和tasks变化，自动重新筛选
   useEffect(() => {
-    filterTasksByTag(selectedTag);
-  }, [tasks, selectedTag]);
+    filterTasksByTags(selectedTags);
+  }, [selectedTags, tasks]);
 
   // 处理下拉刷新
   const onRefresh = async () => {
     setRefreshing(true);
-    // 这里可以调用fetchTasks，但由于架构原因，暂时模拟刷新
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -76,7 +116,6 @@ const TaskListTab = ({
       name: newTaskName,
       description: '',
       priority: 'medium',
-      task_tag: selectedTag,
     });
 
     if (success) {
@@ -95,13 +134,40 @@ const TaskListTab = ({
     setEditModalVisible(true);
   };
 
+  // 生成空状态提示文本
+  const getEmptyStateText = () => {
+    if (tasks.length === 0) {
+      return {
+        title: '暂无任务',
+        hint: '点击上方输入框快速创建任务'
+      };
+    } else if (selectedTags.length === 0) {
+      return {
+        title: '暂无任务',
+        hint: '选择标签来筛选任务'
+      };
+    } else if (selectedTags.length === 1) {
+      return {
+        title: `暂无"${selectedTags[0]}"任务`,
+        hint: '试试调整标签筛选条件'
+      };
+    } else {
+      return {
+        title: `暂无"${selectedTags.join(' + ')}"任务`,
+        hint: '试试调整标签筛选条件'
+      };
+    }
+  };
+
+  const emptyState = getEmptyStateText();
+
   return (
     <>
       {/* 标签筛选器 */}
       <TagFilter
         tasks={tasks}
-        selectedTag={selectedTag}
-        onTagSelect={handleTagSelect}
+        selectedTags={selectedTags}
+        onTagToggle={handleTagToggle}
       />
 
       {/* 添加任务区域 */}
@@ -109,7 +175,7 @@ const TaskListTab = ({
         <View style={styles.quickCreateContainer}>
           <TextInput
             style={styles.quickInput}
-            placeholder={`快速添加到"${selectedTag}"...`}
+            placeholder="快速添加任务..."
             value={newTaskName}
             onChangeText={setNewTaskName}
             onSubmitEditing={quickCreateTask}
@@ -148,8 +214,8 @@ const TaskListTab = ({
       >
         {filteredTasks.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>暂无"{selectedTag}"任务</Text>
-            <Text style={styles.emptyHint}>点击上方输入框快速创建任务</Text>
+            <Text style={styles.emptyText}>{emptyState.title}</Text>
+            <Text style={styles.emptyHint}>{emptyState.hint}</Text>
             <Text style={styles.emptyHint}>或下拉页面搜索任务</Text>
           </View>
         ) : (
