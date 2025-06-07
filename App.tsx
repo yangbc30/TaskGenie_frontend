@@ -21,7 +21,7 @@ const App = () => {
     fetchTasks,
     createTask,
     updateTask,
-    toggleTaskCompletion, // 获取新的切换方法
+    toggleTaskCompletion,
     deleteTask,
     aiPlanTasks,
   } = useTaskOperations();
@@ -40,7 +40,17 @@ const App = () => {
   }, []);
 
   const handleTaskSelect = (task) => {
-    Alert.alert('任务详情', `任务名称: ${task.name}\n${task.description || '无描述'}\n标签: ${task.task_tag}`);
+    Alert.alert(
+      '任务详情', 
+      `任务名称: ${task.name}\n${task.description || '无描述'}\n标签: ${task.task_tag}`,
+      [{ text: '确定', style: 'default' }]
+    );
+  };
+
+  // 处理AI规划，接收prompt和maxTasks参数
+  const handleAIPlan = (prompt, maxTasks = 5) => {
+    console.log(`开始AI规划: ${prompt}, 任务数量: ${maxTasks}`);
+    aiPlanTasks(prompt, maxTasks);
   };
 
   return (
@@ -63,7 +73,7 @@ const App = () => {
         <AIPlanningModal
           visible={aiModalVisible}
           onClose={() => setAiModalVisible(false)}
-          onPlan={aiPlanTasks}
+          onPlan={handleAIPlan}
           loading={loading}
           aiJobId={aiJobId}
         />
@@ -79,7 +89,7 @@ const App = () => {
               onCreateTask={createTask}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
-              onToggleTaskCompletion={toggleTaskCompletion} // 传递新的切换方法
+              onToggleTaskCompletion={toggleTaskCompletion}
               onOpenAIModal={() => setAiModalVisible(true)}
               pullUpPanResponder={pullUpPanResponder}
             />
