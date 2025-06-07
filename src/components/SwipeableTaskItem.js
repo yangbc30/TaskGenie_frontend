@@ -11,55 +11,31 @@ import { styles } from '../styles/ComponentStyles';
 
 const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime }) => {
   const translateX = useRef(new Animated.Value(0)).current;
-  const [isActionExecuted, setIsActionExecuted] = useState(false);
   
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
         return Math.abs(gestureState.dx) > 5;
       },
-      onPanResponderGrant: () => {
-        setIsActionExecuted(false);
-      },
       onPanResponderMove: (_, gestureState) => {
-        translateX.setValue(gestureState.dx);
-        
-        if (!isActionExecuted) {
-          if (gestureState.dx < -120) {
-            setIsActionExecuted(true);
-            onEdit(task);
-            Animated.spring(translateX, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
-          } else if (gestureState.dx > 120) {
-            setIsActionExecuted(true);
-            onDelete(task.id);
-            Animated.spring(translateX, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
-          }
+        // 只允许左滑
+        if (gestureState.dx < 0) {
+          translateX.setValue(gestureState.dx);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (!isActionExecuted) {
-          if (gestureState.dx < -30) {
-            Animated.spring(translateX, {
-              toValue: -75,
-              useNativeDriver: true,
-            }).start();
-          } else if (gestureState.dx > 30) {
-            Animated.spring(translateX, {
-              toValue: 75,
-              useNativeDriver: true,
-            }).start();
-          } else {
-            Animated.spring(translateX, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
-          }
+        if (gestureState.dx < -50) {
+          // 左滑超过50像素，显示操作按钮
+          Animated.spring(translateX, {
+            toValue: -150, // 显示两个按钮的宽度
+            useNativeDriver: true,
+          }).start();
+        } else {
+          // 回到原位
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
         }
       },
     })
@@ -73,40 +49,48 @@ const SwipeableTaskItem = ({ task, onEdit, onDelete, onToggle, formatDateTime })
 
   const isOverdue = task.task_tag === '已过期';
 
+  const handleEdit = () => {
+    onEdit(task);
+    // 操作后收回按钮
+    Animated.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleDelete = () => {
+    onDelete(task.id);
+    // 操作后收回按钮
+    Animated.spring(translateX, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <View style={styles.swipeContainer}>
-      {/* 左侧编辑按钮 */}
-      <View style={styles.leftAction}>
+      {/* 右侧操作按钮区域 */}
+      <View style={styles.actionButtonsContainer}>
+        {/* 修改按钮 */}
         <TouchableOpacity
-          style={styles.swipeActionFull}
-          onPress={() => {
-            onEdit(task);
-            Animated.spring(translateX, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
-          }}
+          style={[styles.actionButton, styles.editButton]}
+          onPress={handleEdit}
         >
-          <Text style={styles.swipeActionText}>编辑</Text>
+          <Text style={styles.actionButtonIcon}>✏️</Text>
+          <Text style={styles.actionButtonText}>修改</Text>
+        </TouchableOpacity>
+        
+        {/* 删除按钮 */}
+        <TouchableOpacity
+          style={[styles.actionButton, styles.deleteButton]}
+          onPress={handleDelete}
+        >
+          <Text style={styles.actionButtonIcon}>🗑️</Text>
+          <Text style={styles.actionButtonText}>删除</Text>
         </TouchableOpacity>
       </View>
       
-      {/* 右侧删除按钮 */}
-      <View style={styles.rightAction}>
-        <TouchableOpacity
-          style={styles.swipeActionFull}
-          onPress={() => {
-            onDelete(task.id);
-            Animated.spring(translateX, {
-              toValue: 0,
-              useNativeDriver: true,
-            }).start();
-          }}
-        >
-          <Text style={styles.swipeActionText}>删除</Text>
-        </TouchableOpacity>
-      </View>
-      
+      {/* 任务内容区域 */}
       <Animated.View
         style={[
           styles.taskItemContainer,

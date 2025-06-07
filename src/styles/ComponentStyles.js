@@ -139,32 +139,35 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
-  leftAction: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: '100%',
-    backgroundColor: '#3498db',
-  },
-  rightAction: {
+  // 操作按钮容器
+  actionButtonsContainer: {
     position: 'absolute',
     right: 0,
     top: 0,
     bottom: 0,
-    width: '100%',
-    backgroundColor: '#e74c3c',
+    flexDirection: 'row',
+    width: 150,
   },
-  swipeActionFull: {
-    width: '100%',
-    height: '100%',
+  actionButton: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 10,
   },
-  swipeActionText: {
+  editButton: {
+    backgroundColor: '#3498db', // 蓝色编辑按钮
+  },
+  deleteButton: {
+    backgroundColor: '#e74c3c', // 红色删除按钮
+  },
+  actionButtonIcon: {
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  actionButtonText: {
     color: '#fff',
+    fontSize: 12,
     fontWeight: 'bold',
-    fontSize: 14,
   },
   taskItemContainer: {
     backgroundColor: '#fff',

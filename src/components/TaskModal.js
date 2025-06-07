@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import { useTask, TASK_TAGS, TAG_COLORS } from '../context/TaskContext';
-import { formatDateForInput, parseDateInput } from '../utils/dateUtils';
 
 const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
   const {
@@ -54,18 +53,87 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
     }
   };
 
-  const handleDateChange = (text) => {
-    setCurrentTask({...currentTask, due_date: text});
+  const getDateOptions = () => {
+    const now = new Date();
+    
+    // 今天 18:00
+    const today = new Date(now);
+    today.setHours(18, 0, 0, 0);
+    
+    // 明天 18:00
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(18, 0, 0, 0);
+    
+    // 后天 18:00
+    const dayAfterTomorrow = new Date(now);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    dayAfterTomorrow.setHours(18, 0, 0, 0);
+    
+    // 下周 18:00
+    const nextWeek = new Date(now);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    nextWeek.setHours(18, 0, 0, 0);
+
+    return [
+      { 
+        label: '今天晚上', 
+        date: today,
+        description: `今天 18:00`
+      },
+      { 
+        label: '明天晚上', 
+        date: tomorrow,
+        description: `明天 18:00`
+      },
+      { 
+        label: '后天晚上', 
+        date: dayAfterTomorrow,
+        description: `后天 18:00`
+      },
+      { 
+        label: '下周', 
+        date: nextWeek,
+        description: `下周${['日', '一', '二', '三', '四', '五', '六'][nextWeek.getDay()]} 18:00`
+      },
+    ];
   };
 
-  const handleDateBlur = () => {
-    const parsed = parseDateInput(currentTask.due_date);
-    if (parsed) {
-      setCurrentTask({...currentTask, due_date: parsed});
-    } else if (currentTask.due_date && !currentTask.due_date.includes('T')) {
-      Alert.alert('提示', '日期格式不正确，请使用如 "2025-05-31 15:30" 或 "明天 14:00" 的格式');
-      setCurrentTask({...currentTask, due_date: ''});
+  const handleDateSelect = (option) => {
+    setCurrentTask({
+      ...currentTask,
+      due_date: option.date.toISOString()
+    });
+  };
+
+  const clearDueDate = () => {
+    setCurrentTask({
+      ...currentTask,
+      due_date: null
+    });
+  };
+
+  const getSelectedDateLabel = () => {
+    if (!currentTask?.due_date) return '选择截止时间';
+    
+    const selectedDate = new Date(currentTask.due_date);
+    const options = getDateOptions();
+    
+    // 检查是否匹配预设选项
+    for (const option of options) {
+      if (Math.abs(selectedDate.getTime() - option.date.getTime()) < 60000) { // 1分钟内的差异
+        return option.description;
+      }
     }
+    
+    // 如果不匹配预设选项，显示具体日期时间
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    const day = selectedDate.getDate();
+    const hour = selectedDate.getHours();
+    const minute = selectedDate.getMinutes();
+    
+    return `${year}-${month}-${day} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   };
 
   const styles = {
@@ -163,11 +231,79 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
     selectedTagText: {
       fontWeight: 'bold',
     },
-    dateHint: {
+    // 日期时间选择样式
+    dateTimeContainer: {
+      marginTop: 5,
+    },
+    currentSelection: {
+      backgroundColor: '#f8f9fa',
+      padding: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+      marginBottom: 15,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    currentSelectionText: {
+      fontSize: 14,
+      color: '#2c3e50',
+      fontWeight: '500',
+    },
+    currentSelectionIcon: {
+      fontSize: 16,
+      color: '#3498db',
+    },
+    dateOptionsContainer: {
+      marginBottom: 15,
+    },
+    dateOptionRow: {
+      flexDirection: 'row',
+      marginBottom: 8,
+    },
+    dateOption: {
+      flex: 1,
+      padding: 12,
+      marginHorizontal: 4,
+      backgroundColor: '#f8f9fa',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+      alignItems: 'center',
+    },
+    selectedDateOption: {
+      backgroundColor: '#3498db',
+      borderColor: '#3498db',
+    },
+    dateOptionLabel: {
+      fontSize: 13,
+      color: '#2c3e50',
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    selectedDateOptionLabel: {
+      color: '#fff',
+    },
+    dateOptionDescription: {
+      fontSize: 11,
+      color: '#7f8c8d',
+    },
+    selectedDateOptionDescription: {
+      color: '#fff',
+      opacity: 0.9,
+    },
+    clearDateButton: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: '#ecf0f1',
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    clearDateText: {
       fontSize: 12,
-      color: '#95a5a6',
-      marginTop: 4,
-      marginLeft: 2,
+      color: '#7f8c8d',
     },
     modalButtons: {
       flexDirection: 'row',
@@ -196,6 +332,8 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
     },
   };
 
+  const dateOptions = getDateOptions();
+
   return (
     <Modal
       animationType="slide"
@@ -209,7 +347,7 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
             {isEdit ? '编辑任务' : '创建新任务'}
           </Text>
           
-          <ScrollView style={styles.modalScroll}>
+          <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
             <Text style={styles.inputLabel}>任务名称 {!isEdit && '*'}</Text>
             <TextInput
               style={styles.modalInput}
@@ -272,16 +410,92 @@ const TaskModal = ({ visible, isEdit, onClose, onSave }) => {
             </View>
             
             <Text style={styles.inputLabel}>截止时间</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="例如: 2025-05-31 15:30 或 明天 14:00"
-              value={formatDateForInput(currentTask?.due_date)}
-              onChangeText={handleDateChange}
-              onBlur={handleDateBlur}
-            />
-            <Text style={styles.dateHint}>
-              支持: 明天/后天 15:30、2025-05-31 15:30、05-31 15:30
-            </Text>
+            <View style={styles.dateTimeContainer}>
+              {/* 当前选择显示 */}
+              <View style={styles.currentSelection}>
+                <Text style={styles.currentSelectionText}>
+                  {getSelectedDateLabel()}
+                </Text>
+                <Text style={styles.currentSelectionIcon}>📅</Text>
+              </View>
+              
+              {/* 日期选择选项 */}
+              <View style={styles.dateOptionsContainer}>
+                {/* 第一行：今天、明天 */}
+                <View style={styles.dateOptionRow}>
+                  {dateOptions.slice(0, 2).map((option, index) => {
+                    const isSelected = currentTask?.due_date && 
+                      Math.abs(new Date(currentTask.due_date).getTime() - option.date.getTime()) < 60000;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.dateOption,
+                          isSelected && styles.selectedDateOption
+                        ]}
+                        onPress={() => handleDateSelect(option)}
+                      >
+                        <Text style={[
+                          styles.dateOptionLabel,
+                          isSelected && styles.selectedDateOptionLabel
+                        ]}>
+                          {option.label}
+                        </Text>
+                        <Text style={[
+                          styles.dateOptionDescription,
+                          isSelected && styles.selectedDateOptionDescription
+                        ]}>
+                          {option.description}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                
+                {/* 第二行：后天、下周 */}
+                <View style={styles.dateOptionRow}>
+                  {dateOptions.slice(2, 4).map((option, index) => {
+                    const isSelected = currentTask?.due_date && 
+                      Math.abs(new Date(currentTask.due_date).getTime() - option.date.getTime()) < 60000;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={index + 2}
+                        style={[
+                          styles.dateOption,
+                          isSelected && styles.selectedDateOption
+                        ]}
+                        onPress={() => handleDateSelect(option)}
+                      >
+                        <Text style={[
+                          styles.dateOptionLabel,
+                          isSelected && styles.selectedDateOptionLabel
+                        ]}>
+                          {option.label}
+                        </Text>
+                        <Text style={[
+                          styles.dateOptionDescription,
+                          isSelected && styles.selectedDateOptionDescription
+                        ]}>
+                          {option.description}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* 清除截止时间按钮 */}
+              {currentTask?.due_date && (
+                <TouchableOpacity
+                  style={styles.clearDateButton}
+                  onPress={clearDueDate}
+                >
+                  <Text style={styles.clearDateText}>清除截止时间</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             
             <Text style={styles.inputLabel}>预计时长（小时）</Text>
             <TextInput
