@@ -43,6 +43,7 @@ export const TaskProvider = ({ children }) => {
     due_date: '',
     estimated_hours: '',
     task_tag: '今日',
+    original_tag: null, // 新增字段
   });
 
   const resetNewTask = () => {
@@ -53,6 +54,7 @@ export const TaskProvider = ({ children }) => {
       due_date: '',
       estimated_hours: '',
       task_tag: '今日',
+      original_tag: null, // 重置时也清空原始标签
     });
   };
 

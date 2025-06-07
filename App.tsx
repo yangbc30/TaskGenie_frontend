@@ -21,6 +21,7 @@ const App = () => {
     fetchTasks,
     createTask,
     updateTask,
+    toggleTaskCompletion, // 获取新的切换方法
     deleteTask,
     aiPlanTasks,
   } = useTaskOperations();
@@ -78,6 +79,7 @@ const App = () => {
               onCreateTask={createTask}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
+              onToggleTaskCompletion={toggleTaskCompletion} // 传递新的切换方法
               onOpenAIModal={() => setAiModalVisible(true)}
               pullUpPanResponder={pullUpPanResponder}
             />

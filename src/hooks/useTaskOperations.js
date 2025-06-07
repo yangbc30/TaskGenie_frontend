@@ -42,25 +42,77 @@ export const useTaskOperations = () => {
     }
   };
 
-  // 更新任务
+  // 更新任务 - 优化完成状态切换逻辑
   const updateTask = async (taskId, updateData) => {
     try {
+      // 如果是切换完成状态，确保只发送必要的字段
+      let payload = updateData;
+      
+      // 如果是切换完成状态，专门处理
+      if (updateData.hasOwnProperty('completed')) {
+        payload = {
+          completed: updateData.completed,
+          // 不发送 task_tag，让后端自动处理标签逻辑
+        };
+      }
+
       const response = await fetch(`${API_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        await fetchTasks();
+        await fetchTasks(); // 重新获取任务列表以确保状态同步
         return true;
       }
       return false;
     } catch (error) {
       Alert.alert('错误', '更新任务失败');
       console.error(error);
+      return false;
+    }
+  };
+
+  // 切换任务完成状态 - 专门的方法
+  const toggleTaskCompletion = async (taskId, currentCompleted) => {
+    try {
+      // 发送切换完成状态的请求
+      const response = await fetch(`${API_URL}/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completed: !currentCompleted,
+        }),
+      });
+
+      if (response.ok) {
+        // 立即更新本地状态，提供更好的用户体验
+        setTasks(prevTasks => prevTasks.map(task => {
+          if (task.id === taskId) {
+            return {
+              ...task,
+              completed: !currentCompleted,
+              // 注意：不在这里更新task_tag，让后端处理后再同步
+            };
+          }
+          return task;
+        }));
+        
+        // 然后同步后端状态
+        await fetchTasks();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      Alert.alert('错误', '切换任务状态失败');
+      console.error(error);
+      // 如果失败，重新获取任务以恢复正确状态
+      await fetchTasks();
       return false;
     }
   };
@@ -157,6 +209,7 @@ export const useTaskOperations = () => {
     fetchTasks,
     createTask,
     updateTask,
+    toggleTaskCompletion, // 新增专门的切换完成状态方法
     deleteTask,
     aiPlanTasks,
   };
