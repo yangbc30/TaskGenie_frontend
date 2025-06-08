@@ -56,7 +56,8 @@ const AIScheduleModal = ({ visible, onClose, selectedDate, onRefresh, forceRegen
       if (response.ok) {
         const data = await response.json();
         setAiJobId(data.job_id);
-        Alert.alert('处理中', 'AI 正在为您安排日程，请稍候...');
+        // 移除了 Alert.alert('处理中', 'AI 正在为您安排日程，请稍候...');
+        console.log('🤖 AI日程安排已启动:', data.job_id); // 改为控制台日志
       } else {
         const error = await response.json();
         Alert.alert('错误', error.detail || 'AI 处理失败');
@@ -69,7 +70,7 @@ const AIScheduleModal = ({ visible, onClose, selectedDate, onRefresh, forceRegen
     }
   };
 
-  // 检查AI任务状态
+  // 检查AI任务状态 - 移除完成弹窗
   useEffect(() => {
     if (aiJobId) {
       const checkJobStatus = setInterval(async () => {
@@ -83,7 +84,8 @@ const AIScheduleModal = ({ visible, onClose, selectedDate, onRefresh, forceRegen
             if (onRefresh) {
               onRefresh(); // 刷新父组件的数据
             }
-            Alert.alert('成功', 'AI 已为您安排好日程');
+            // 移除了 Alert.alert('成功', 'AI 已为您安排好日程');
+            console.log('✅ AI日程安排完成'); // 改为控制台日志
           } else if (job.status === 'failed') {
             setAiJobId(null);
             Alert.alert('错误', job.error || 'AI 处理失败');
@@ -349,6 +351,17 @@ const AIScheduleModal = ({ visible, onClose, selectedDate, onRefresh, forceRegen
       color: '#7f8c8d',
       textAlign: 'center',
     },
+    // 添加处理中状态的样式
+    processingContainer: {
+      alignItems: 'center',
+      paddingVertical: 20,
+    },
+    processingText: {
+      color: '#3498db',
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 10,
+    },
   };
 
   if (!visible || !selectedDate) return null;
@@ -412,13 +425,13 @@ const AIScheduleModal = ({ visible, onClose, selectedDate, onRefresh, forceRegen
                   </View>
                 )}
 
-                {!scheduleResult ? (
+                {!scheduleResult && !aiJobId ? (
                   <TouchableOpacity
                     style={[styles.startButton, (loading || aiJobId) && styles.disabledButton]}
                     onPress={handleStartSchedule}
                     disabled={loading || !!aiJobId || !dayPreview || dayPreview.task_count === 0}
                   >
-                    {loading || aiJobId ? (
+                    {loading ? (
                       <View style={styles.startButtonContent}>
                         <ActivityIndicator color="#fff" />
                         <Text style={styles.startButtonText}>AI 正在规划中...</Text>
@@ -427,7 +440,17 @@ const AIScheduleModal = ({ visible, onClose, selectedDate, onRefresh, forceRegen
                       <Text style={styles.startButtonText}>🤖 开始 AI 安排</Text>
                     )}
                   </TouchableOpacity>
-                ) : (
+                ) : aiJobId && !scheduleResult ? (
+                  // 处理中状态显示
+                  <View style={styles.processingContainer}>
+                    <ActivityIndicator size="large" color="#9b59b6" />
+                    <Text style={styles.processingText}>
+                      🤖 AI 正在为您智能安排日程...{'\n'}
+                      ✨ 完成后结果会自动显示{'\n'}
+                      📝 您可以关闭此窗口继续使用其他功能
+                    </Text>
+                  </View>
+                ) : scheduleResult ? (
                   <View style={styles.scheduleContainer}>
                     <View style={styles.scheduleHeader}>
                       <Text style={styles.scheduleTitle}>📅 AI 安排结果</Text>
@@ -491,7 +514,7 @@ const AIScheduleModal = ({ visible, onClose, selectedDate, onRefresh, forceRegen
                       </View>
                     )}
                   </View>
-                )}
+                ) : null}
               </>
             )}
           </ScrollView>

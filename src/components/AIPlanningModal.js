@@ -266,7 +266,6 @@ const AIPlanningModal = ({ visible, onClose, onPlan, loading, aiJobId }) => {
             <Text style={styles.exampleTitle}>💡 输入示例</Text>
             <Text style={styles.exampleText}>
               输入："学习React Native开发"
-              {'\n'}AI会生成主题："React Native学习计划"
               {'\n'}分解为：
               {'\n'}• React Native学习计划 Step1：搭建开发环境
               {'\n'}• React Native学习计划 Step2：学习基础组件
@@ -289,15 +288,6 @@ const AIPlanningModal = ({ visible, onClose, onPlan, loading, aiJobId }) => {
             )}
           </TouchableOpacity>
           
-          {aiJobId && (
-            <View style={styles.processingContainer}>
-              <Text style={styles.processingText}>
-                🤖 AI 正在为您分析需求并生成 {maxTasks} 个具体可行的任务...
-                {'\n'}✨ 完成后任务会自动出现在任务列表中，无需等待
-                {'\n'}📝 您可以关闭此窗口继续使用其他功能
-              </Text>
-            </View>
-          )}
         </View>
       </View>
     </Modal>

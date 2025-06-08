@@ -140,9 +140,11 @@ export const useTaskOperations = () => {
     );
   };
 
-  // AI 规划任务
-  const aiPlanTasks = async (prompt) => {
+  // AI 规划任务 - 修复版本，正确传递 maxTasks 参数
+  const aiPlanTasks = async (prompt, maxTasks = 5) => {
     setLoading(true);
+    console.log('🚀 发送AI规划请求', { prompt, max_tasks: maxTasks }); // 添加调试日志
+    
     try {
       const response = await fetch(`${API_URL}/ai/plan-tasks/async`, {
         method: 'POST',
@@ -151,21 +153,22 @@ export const useTaskOperations = () => {
         },
         body: JSON.stringify({
           prompt: prompt,
-          max_tasks: 3,
+          max_tasks: maxTasks, // 修复：确保正确传递参数
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ AI规划响应', data); // 添加调试日志
         setAiJobId(data.job_id);
-        Alert.alert('处理中', 'AI 正在为您规划任务，请稍候...');
+        Alert.alert('处理中', `AI 正在为您规划 ${maxTasks} 个任务，请稍候...`);
       } else {
         const error = await response.json();
         Alert.alert('错误', error.detail || 'AI 处理失败');
       }
     } catch (error) {
       Alert.alert('错误', 'AI 规划失败，请检查网络连接');
-      console.error(error);
+      console.error('AI规划请求失败:', error);
     } finally {
       setLoading(false);
     }
@@ -179,9 +182,12 @@ export const useTaskOperations = () => {
           const response = await fetch(`${API_URL}/ai/jobs/${aiJobId}`);
           const job = await response.json();
           
+          console.log('📊 AI作业状态检查:', job.status); // 添加调试日志
+          
           if (job.status === 'completed') {
             setAiJobId(null);
             await fetchTasks(); // 静默刷新任务列表
+            console.log('✅ AI规划完成，任务数量:', job.result?.length || 0);
             // 移除了 Alert.alert('成功', 'AI 已为您规划任务');
           } else if (job.status === 'failed') {
             setAiJobId(null);
